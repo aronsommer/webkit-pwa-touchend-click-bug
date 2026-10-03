@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- display: standalone opens it from the Home Screen as a web app. -->
+    <link rel="manifest" href="manifest.json" />
+    <title>Click after a cancelled touchend</title>
+    <style>
+      body {
+        margin: 0;
+        font: 16px system-ui;
+      }
+      /* The condition under test. */
+      .no-select,
+      .no-select * {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #target {
+        height: 100vh;
+        background: #ddd;
+      }
+      #info {
+        position: fixed;
+        inset: 60px 10px auto;
+        padding: 10px;
+        background: white;
+        text-align: center;
+      }
+      #info > * {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="target"></div>
+    <div id="info">
+      <div id="mode"></div>
+      <div>Long press the grey area for one second, then lift your finger.</div>
+      <button id="toggle"></button>
+      <div id="result">Result: none yet</div>
+    </div>
+    <script>
+      const target = document.getElementById("target");
+      const toggle = document.getElementById("toggle");
+      const result = document.getElementById("result");
+      const root = document.documentElement;
+
+      document.getElementById("mode").textContent = navigator.standalone
+        ? "Opened from the Home Screen"
+        : "Opened in the browser";
+
+      const showSelection = () =>
+        (toggle.textContent = `user-select: ${
+          root.classList.contains("no-select") ? "none" : "auto"
+        } (tap to switch)`);
+      toggle.addEventListener("click", () => {
+        root.classList.toggle("no-select");
+        showSelection();
+      });
+      root.classList.add("no-select");
+      showSelection();
+
+      const cancel = (e) => e.preventDefault();
+      let held = false;
+      let timer;
+
+      const end = (e) => {
+        clearTimeout(timer);
+        document.removeEventListener("touchend", end);
+        document.removeEventListener("touchcancel", end);
+        if (held) result.textContent = `Result: PASS, no click after ${e.type}`;
+      };
+
+      target.addEventListener(
+        "touchstart",
+        () => {
+          held = false;
+          clearTimeout(timer);
+          document.removeEventListener("touchend", cancel);
+          document.addEventListener("touchend", end);
+          document.addEventListener("touchcancel", end);
+          // After 600 ms, cancel the coming touchend so that no click follows.
+          timer = setTimeout(() => {
+            held = true;
+            document.addEventListener("touchend", cancel, { once: true });
+            result.textContent = "Result: long press seen, lift your finger";
+          }, 600);
+        },
+        { passive: false },
+      );
+
+      // The pressed element has its own click listener.
+      target.addEventListener("click", () => {
+        result.textContent = held
+          ? "Result: FAIL, click after the cancelled touchend"
+          : "Result: that was a tap, press for longer";
+      });
+    </script>
+  </body>
+</html>
