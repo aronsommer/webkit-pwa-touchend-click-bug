@@ -6,6 +6,8 @@ The page has `user-select: none` and a `click` listener on the pressed element. 
 
 Demo: https://aronsommer.github.io/webkit-pwa-touchend-click-bug/
 
+WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=326218
+
 ## Steps
 
 1. Open the demo in Safari on an iPhone. Long press the grey area for one second, then lift your finger. Result: **PASS**.
